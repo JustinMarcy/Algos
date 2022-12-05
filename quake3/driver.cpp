@@ -11,4 +11,6 @@ int main() {
     std::cout<<"using std sqrt: "<<(1/sqrt(x))<<std::endl;
     std::cout<<"percent diff w/ 1 iteration: "<<((fast_inv_sqrt(x,0)-(1/sqrt(x)))/(1/sqrt(x)))*100<<std::endl;
     std::cout<<"percent diff w/ 2 iteration: "<<((fast_inv_sqrt(x,1)-(1/sqrt(x)))/(1/sqrt(x)))*100<<std::endl;
+
+    return 0;
 }
