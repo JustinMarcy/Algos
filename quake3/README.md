@@ -18,7 +18,7 @@ $$\{x \in \mathbb{R} \mid x > 0\}$$
 <H3>IEEE-754</H3>
   <p>A single precision float in IEEE-754 (also called binary32) is defined in the table below:
   </p>
-<style>
+<!-- <style>
   .custom-table td
   {
     border-left: 1px solid;
@@ -26,7 +26,7 @@ $$\{x \in \mathbb{R} \mid x > 0\}$$
     border-top: 1px solid;
     border-bottom: 1px solid;
   }
-</style>
+</style> -->
 <table class="custom-table">
   <tr>
     <td></td>
