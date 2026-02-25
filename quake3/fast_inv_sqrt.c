@@ -29,7 +29,7 @@ double fast_inv_sqrt_64(double number, unsigned int newton_iters)
     x2 = number * 0.5F;
     y = number;
     i = * (long *) &y;
-    i = 0x5fe6eb3bf5709a00 - (i >> 1);
+    i = 0x5fe6eb3be0000000 - (i >> 1);
     y = * (double * ) &i;
 
     for (unsigned int j=0; j<newton_iters; j++)
