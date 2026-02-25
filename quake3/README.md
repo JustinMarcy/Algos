@@ -3,14 +3,14 @@
 <p>The famous quake3 algorithm is an approximation of the inverse square root of a number x (where x is a positive real number). </p>
 
 $$f(x) = {1 \over \sqrt{x}}$$
-$$\{x \in \mathbb{R} \mid x > 0\}$$
+$$\\{x \in \mathbb{R} \mid x > 0\\}$$
 
 <H2>Computer Graphics Background</H2>
 
 <H2>Key Concepts</H2>
   <ol>
     <li>Normalized numbers in IEEE 754.</li>
-    <li>Mathematical approximations in binary.</li>
+    <li>Piecewise linear approximation.</li>
     <li>Bit manipulation in the C-language.</li>
     <li>Take advantage of constraints (input will always be positive and the result will always be between 0 and 1).</li>
   </ol>
@@ -97,16 +97,23 @@ $$\{x \in \mathbb{R} \mid x > 0\}$$
 
 <H4>Offset Binary Notation in IEEE-754:</H4>
   <p>In IEEE-754, the exponent is interpreted differently than it is stored. The standard uses a "bias" to interpret the stored exponent value. The bias essentially makes the value signed, splitting the range into negative and positive values. So for a 32-bit float, the 8-bit exponent has it's decimal range is shifted from (0 to 255) to (-126 to 127). This offset is also referred to as "excess-127". Just remember that the offset changes depending on the size of the float and therefore the number of bits in the exponent. For example, a 64-bit float would use excess-1023. This is the equation to find the bias:
-  
+  </p>
+
   $$ bias = 2^{bits-1}-1$$
 
+  <p style="text-align: center;">where <i>bits</i> is the available number of bits to the exponent</p>
+
+  <p>
   Moreover, the standard reserves 0 and 255 for special cases (0, -inf, +inf, NaN). This affects the range of the possible unsigned integers to go from (0, 255) to (1, 254). We can represent the decimal range of possible integers as follows:
 
-  $$ [1-bias, (2^{bits}-2) - bias] $$
+  $$ \\{1,\space (2^{bits}-2)\\} $$
+  Then subtract the bias:
+  $$ \\{1-bias,\space (2^{bits}-2) - bias\\} $$
   which simplifies to:
-  $$ [1-bias, bias]$$
+  $$ \\{1-bias,\space bias\\} $$
 
-  The standard was designed with this bias for a few reasons:</p>
+  The standard was designed with this bias for a few reasons:
+  </p>
   <ol type="1">
     <li>"If you use exponents to show both integer (n >= 0) and fractional (n < 0) values you have the problem that you need one exponent for 2^0 = 1. So the remaining range is odd, giving you either the choice of choosing the bigger range for fractions or for integers. For single precision we have 256 values, 255 without the 0 exponent. Now IEEE754 reserved the highest exponent (255) for special values: +- Infinity and NaNs (Not a Number) to indicate failure. So we are back to even numbers again (254 for both sides, integer and fractional) but with a lower bias."<a href="#references">[2]</a></li>
     <li>"The second reason is gradual underflow. The Standard declares that normally all numbers are normalized, meaning that the exponent indicates the position of the first bit. To increase the number of bits the first bit is normally not set but assumed (hidden bit): The first bit after the exponent bit is the second bit of the number, the first is always a binary 1. If you enforce normalization you encounter the problem that you cannot encode zero and even if you encode zero as special value, the numerical accuracy is hampered. +-Infinity (the highest exponent) makes it clear that something is wrong, but underflow to zero for too small numbers is perfectly normal and therefore easily to overlook as a possible problem. So Kahan, the designer of the standard, decided that denormalized numbers or subnormals should be introduced and they should include 1/MAX_FLOAT."<a href="#references">[2]</a></li>
