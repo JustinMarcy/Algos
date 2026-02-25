@@ -96,7 +96,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   </p>
 
 <H4>Offset Binary Notation in IEEE-754:</H4>
-  <p>In IEEE-754, the exponent is interpreted differently than it is stored. The standard uses a "bias" to interpret the stored exponent value. The bias essentially makes the value signed, splitting the range into negative and positive values. So for a 32-bit float, the 8-bit exponent has it's decimal range is shifted from (0 to 255) to (-126 to 127). This offset is also referred to as "excess-127". Just remember that the offset changes depending on the size of the float and therefore the number of bits in the exponent. For example, a 64-bit float would use excess-1023. This is the equation to find the bias:
+  <p>In IEEE-754, the exponent is interpreted differently than it is stored. The standard uses a "bias" to interpret the stored exponent value. The bias essentially makes the value signed, splitting the range into negative and positive values. So for a 32-bit float, the 8-bit exponent has it's decimal range is shifted from (0 to 255) to (-126 to 127). This offset is also referred to as "excess-127". Just remember that the offset changes depending on the size of the float and therefore the number of bits available to the exponent. For example, a 64-bit float would use excess-1023. This is the equation to find the bias:
   </p>
 
   $$ bias = 2^{bits-1}-1$$
@@ -106,7 +106,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   <p>
   Moreover, the standard reserves 0 and 255 for special cases (0, -inf, +inf, NaN). This affects the range of the possible unsigned integers to go from (0, 255) to (1, 254). We can represent the decimal range of possible integers as follows:
 
-  $$ \\{1,\space (2^{bits}-2)\\} $$
+  $$ \\{1,\space 2^{bits}-2\\} $$
   Then subtract the bias:
   $$ \\{1-bias,\space (2^{bits}-2) - bias\\} $$
   which simplifies to:
