@@ -124,6 +124,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   <p>While it is not necessary to understand the entire IEEE-754 standard for this algorithm, it is necessary to understand the bit representation to help us understand the mathematical approximations in the next section. Specifically, the bit representations of the mantissa and exponent. Next we will look at how we go from: </p>
 
   $$ bit \space representation_{10} = (1 + {Mantissa\over 2^{23} } ) * 2^{Exponent-Bias} $$
+
   to:
 
   $$ log_{2}(bit\space representation_{10}) \approx {(M + 2^{23}*E)} $$
@@ -178,12 +179,14 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   $$ log_{2}(1 + x) \approx x $$
   $$\\{x \in \mathbb{R} \mid 0 \leq x \leq 1\\}$$
 
-  <figure>
-    <img src="images/graph0.png" style="max-width:100%; max-height:100%; display: block; margin: auto;"> 
-    <figcaption style="max-width:25%; display: block; margin: auto;">
-    The piecewise approximation (zoomed out).
+  <div align="center">
+    <img src="images/graph0.png"">
+    <br>
+    <figcaption>
+      The piecewise approximation (zoomed out).
     </figcaption>
-  </figure>
+  </div>
+  <br>
 
   <p>In a later <a href="#cfactor">section</a>, we will discuss a correction factor &#956 that is added to improve this approximation. For now, just know that we can represent the approximation as:</p>
 
@@ -231,9 +234,9 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   $$ {(M_{y}+2^{23}*E_{y})} \approx -{2^{23}\over 2^{24}}(M_{x}+2^{23}*E_{x})-{2^{23}{3\over 2} \mu} + 2^{23}{381\over 2} $$
   $$ {(M_{y}+2^{23}*E_{y})} \approx -{1\over 2}(M_{x}+2^{23}*E_{x})+{2^{23}(-{3\over 2} \mu} + {381\over 2}) $$
   $$ {(M_{y}+2^{23}*E_{y})} \approx -{1\over 2}(M_{x}+2^{23}*E_{x})+{3\over 2}{2^{23}}(127-\mu ) $$
-  $$ \boxed{{(M_{y}+2^{23}*E_{y})} \approx {3\over 2}{2^{23}}(127-\mu )-{1\over 2}*(M_{x}+2^{23}*E_{x})} $$
+  $$ \boxed{{(M_{y}+2^{23}*E_{y})} \approx {3\over 2}{2^{23}}(127-\mu )-{1\over 2} * (M_{x}+2^{23}*E_{x})} $$
 
-  $$ \underbrace{(M_{y}+2^{23}*E_{y})}_{output,\space bit\space representation} \approx \underbrace{{3\over 2}{2^{23}}(127-\mu)}_{magic\space number}-\underbrace{{1\over 2}*(M_{x}+2^{23}*E_{x})}_{halved\space input,\space bit\space representation\space} $$
+  $$ \underbrace{(M_{y}+2^{23}*E_{y})}_{output,\space bit\space representation} \approx \underbrace{{3\over 2}{2^{23}}(127-\mu)}_{magic\space number}-\underbrace{{1\over 2} * (M_{x}+2^{23}*E_{x})}_{halved\space input,\space bit\space representation\space} $$
 
   <p>It is now possible to understand why the algorithm has this line of code:</p>
 
@@ -243,28 +246,32 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   <p>The creators knew that while the piecewise approximation wasn't the most accurate, it was fast because it did not involve any operations other than adding or multiplying some constants later on in the calculations. Looking at the vanilla approximation below, you can see the approximation is not great in between 0 and 1.
   </p>
 
-  <figure>
-    <img src="images/graph1.png" style="max-width:100%; max-height:100%; display: block; margin: auto;"> 
-    <figcaption style="max-width:25%; display: block; margin: auto;">
-    The piecewise approximation.
+  <div align="center">
+    <img src="images/graph1.png">
+    <br>
+    <figcaption>
+      The piecewise approximation.
     </figcaption>
-  </figure>
+  </div>
+  <br>
 
   <p>To reduce the error across all values between 0 and 1, the creators added a correction factor &#956 to offset x. This reduces average error while keeping complexity low (addition/subtraction are fast operations).
   </p>
 
-  <figure> 
-  <img src="images/graph2.png" style="max-width:100%; max-height:100%; display: block; margin: auto;"> 
-  <figcaption style="max-width:25%; display: block; margin: auto;">
-  The original magic number of 0x5f3759df (meaning &#956=0.04504...)
-  </figcaption>
-  </figure>
+  <div align="center"> 
+    <img src="images/graph2.png">
+    <br>
+    <figcaption>
+      The original magic number of 0x5f3759df (meaning &#956=0.04504...)
+    </figcaption>
+  </div>
+  <br>
 
   <p>The magic number that is found in the algorithm (0x5f3759df) is dependent on the correction factor &#956 chosen to offset the piecewise linear approximation. If we want to know the original correction value used by creators, we can solve for &#956 using the magic number.</p>
 
-  $$ magic\space number = {3\over2}*2^{Mantissa\space bits}*(bias-\mu) $$
-  $$ 0x5f3759df = {3\over2}*2^{23}*(127-\mu) $$
-  $$ 1597463007 = {3\over2}*2^{23}*(127-\mu) $$
+  $$ magic\space number = {3\over2} * 2^{Mantissa\space bits} * (bias-\mu) $$
+  $$ 0x5f3759df = {3\over2} * 2^{23} * (127-\mu) $$
+  $$ 1597463007 = {3\over2} * 2^{23} * (127-\mu) $$
   $$ 1597463007 = 1598029824-12582912\mu $$
   $$ -12582912\mu = −566817 $$
   $$ \mu = {−566817\over-12582912} $$
