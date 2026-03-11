@@ -199,18 +199,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
 
   <p>Part of the reason why this algorithm is famous is because of the mystery surrounding which intuition came first. Was it the approximation or the bit representation. From a mathematical perspective, you can't derive the bit representation without the approximation. The counterargument is how would someone even know to look for this piecewise approximation without understanding that the IEEE bit representation is the log(x) obfuscated by some constants. Only the person(s) who created the algorithm can answer that, but it is actually still unclear who that is. Most likely, they chose the mathematical perspective and tried to eliminate the square root term first, found the approximation, and then found the connection to the bit representation. This is what Nemean's approach was when covering this algorithm, and it does appear the most likely.<a href="#references">[1]</a> </p>
 
-  ```mermaid
-  graph TD;
-    A("Optimize inverse square root operation")-->B["Can eliminate square root using logarithm"];
-    B-->C["Apply logarithm to the base-10 bit representation, solve for $$\space log_{2}(x) $$"];
-    C-->D["Found approximation for $$ \space log_{2}(1+x) $$"];
-    D-->E["Bit representation is revealed $$\space {(M + 2^{23}*E)} $$ "];
-    E-->F["Apply logarithm to $$ \space 1\over \sqrt{x}$$"];
-    F-->G["Substitute in $$ \space log_{2}(x) \space$$ and solve for output bit representation"];
-    G-->H["Solution resolves to a constant minus half of the input. Square root operation eliminated."]
-  ```
-
-  <p>Now lets dive into the math behind this process, which might be a little easier to follow than the flow diagram. We will start by taking the logarithm our IEEE-754 float formula from earlier and then apply our approximation. Note, we will ignore the sign bit since the log of a negative number would produce a complex part and, as we will learn later on, doesn't matter because we bit shift the sign bit away anyways. So our starting bit representation is just the mantissa and exponent. Also, the following equations in this section will be for a 32-bit float, so the exponent bias is 127 and the mantissa is 23 bits in length.</p>
+  <p>Now lets dive into the math behind this process. We will start by taking the logarithm our IEEE-754 float formula from earlier and then apply our approximation. Note, we will ignore the sign bit since the log of a negative number would produce a complex part and, as we will learn later on, doesn't matter because we bit shift the sign bit away anyways. So our starting bit representation is just the mantissa and exponent. Also, the following equations in this section will be for a 32-bit float, so the exponent bias is 127 and the mantissa is 23 bits in length.</p>
 
   $$ x = (1 + {M\over 2^{Mantissa\space bits} }) * 2^{E-Bias} $$
   $$ x = (1 + {M\over 2^{23} }) * 2^{E-127} $$
