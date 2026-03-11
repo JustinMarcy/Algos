@@ -174,7 +174,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   </table>
 
 <H3>The Mathematical Approximation:</H3>
-  <p>The most impressive part of this algorithm is the mathematical intuition behind it. There are two major intuitions. One is a piecewise linear approximation between two functions.</p>
+  <p>The most impressive part of this algorithm is the mathematical intuition behind it. There are two major intuitions. One is a piecewise linear approximation shown below.</p>
 
   $$ log_{2}(1 + x) \approx x $$
   $$\\{x \in \mathbb{R} \mid 0 \leq x \leq 1\\}$$
@@ -263,7 +263,7 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
   $$ 1597463007 = {3\over2} * 2^{23} * (127-\mu) $$
   $$ 1597463007 = 1598029824-12582912\mu $$
   $$ -12582912\mu = −566817 $$
-  $$ \mu = {−566817\over-12582912} $$
+  $$ -\mu = {−566817\over-12582912} $$
   $$ \mu = {188939\over4194304} $$
   $$ \boxed{\mu = 0.0450465679168701171875} $$
 
