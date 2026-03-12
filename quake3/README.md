@@ -279,7 +279,16 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
 <H3>Complexity Difference:</H3>
 <H3 id="best_constant">Deriving the best constant (0x5F375A86):</H3>
 <H3>Does this work with 64 Bits?:</H3>
+  <p>Yes, this works for any size IEEE-754 float, but the magic number needs to be updated along with the variable sizes in the code. Remember that the magic number is dependent on the correction factor &#956 and the size of the float. For a 64-bit float, the exponent bias is 1023 and the length of the mantissa is 52. For simplicity, lets use the same &#956 as the original. </p>
 
+  $$ Let\space u={188939\over4194304} (keep\space the\space same\space correction\space factor) $$
+  $$ magic\space number = {3\over2} * 2^{Mantissa\space bits} * (bias-u) $$
+  $$ magic\space number = {3\over2} * 2^{52}*(1023-{188939\over 4194304}) $$
+  $$ magic\space number = {12871752159\over 8388608} * 2^{52} $$
+  $$ magic\space number = 6910469320640299008_{10} $$
+  $$ magic\space number = 5fe6eb3be0000000_{16} $$
+
+  <p>Additionally, all of the floats in the code must change to doubles for double-precision. The long variable may cause issues for some operating systems. In Windows for example, a long stays 32-bits even on a 64-bit Windows OS.</p>
 <H2>Conclusion & Relevance Today</H2>
 
 <H2 id="references">References</H2>
