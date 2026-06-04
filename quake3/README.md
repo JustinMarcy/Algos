@@ -1,4 +1,4 @@
-<H1>Analysis of the Quake-III-Areana Fast Inverse Square Root</H1>
+<H1>Analysis of the Quake-III-Arena Fast Inverse Square Root</H1>
 <H2>Overview</H2>
 <p>The famous quake3 algorithm is an approximation of the inverse square root of a number x (where x is a positive real number). </p>
 
@@ -6,6 +6,177 @@ $$f(x) = {1 \over \sqrt{x}}$$
 $$\\{x \in \mathbb{R} \mid x > 0\\}$$
 
 <H2>Computer Graphics Background</H2>
+<p>The algorithm's primary purpose is to optimize vector normalization in a computer graphics and rendering context. Inverse square roots are used to normalize a vector, usually a surface normal of a polygon or light ray. These normals are then used (depending on the shading model) to calculate the reflection of a light source on an object. The common shading models that existed both during game development and still used today are flat shading, Gouraud shading and Phong shading. In Quake III Arena, the graphics engine primarily uses Gouraud shading. 
+
+The Gouraud shading model uses the surface normals of each surronding polygon (face normals) to interpolate the surface normal at the vertex. Once the vertex normal is known, it is possible to compute the diffuse and specular light components of the Gouraud model.
+</p>
+
+<figure> 
+<img src="images/gouraud_shading.png" style="max-width:50%; max-height:50%; display: block; margin: auto;"> 
+<figcaption style="max-width:50%; display: block; margin: auto; text-align: center;">
+Gouraud Surface Normal Interpolation <a href="#references">[5]</a>
+</figcaption>
+</figure>
+
+<p>
+For the specular light component, we need to first know the reflected light ray. The equation to calculate the reflected light ray is the following:
+
+$$R = 2(\hat{N}\cdot\hat{L})\hat{N}-\hat{L} $$
+
+This calculation requires both the surface normal at the vertex and the normalized light vector. Now specular light still requires one more calculation after finding the reflected light, but I only want to highlight the normalised vectors here. These calculations are seen in the graphics engine code for calculating the specular light component in quake3:
+</p>
+
+<pre>
+<code>
+Source: https://github.com/id-Software/Quake-III-Arena/blob/master/code/renderer/tr_shade_calc.c#L1040
+
+void RB_CalcSpecularAlpha( unsigned char *alphas ) {
+	int			i;
+	float		*v, *normal;
+	vec3_t		viewer,  reflected;
+	float		l, d;
+	int			b;
+	vec3_t		lightDir;
+	int			numVertexes;
+
+	v = tess.xyz[0];
+	normal = tess.normal[0];
+
+	alphas += 3;
+
+	numVertexes = tess.numVertexes;
+	for (i = 0 ; i < numVertexes ; i++, v += 4, normal += 4, alphas += 4) {
+		float ilength;
+
+		VectorSubtract( lightOrigin, v, lightDir );
+//		ilength = Q_rsqrt( DotProduct( lightDir, lightDir ) );
+		VectorNormalizeFast( lightDir );
+
+		// calculate the specular color
+		d = DotProduct (normal, lightDir);
+//		d *= ilength;
+
+		// we don't optimize for the d < 0 case since this tends to
+		// cause visual artifacts such as faceted "snapping"
+		reflected[0] = normal[0]*2*d - lightDir[0];
+		reflected[1] = normal[1]*2*d - lightDir[1];
+		reflected[2] = normal[2]*2*d - lightDir[2];
+
+		VectorSubtract (backEnd.or.viewOrigin, v, viewer);
+		ilength = Q_rsqrt( DotProduct( viewer, viewer ) );
+		l = DotProduct (reflected, viewer);
+		l *= ilength;
+
+		if (l < 0) {
+			b = 0;
+		} else {
+			l = l*l;
+			l = l*l;
+			b = l * 255;
+			if (b > 255) {
+				b = 255;
+			}
+		}
+
+		*alphas = b;
+	}
+}
+</code>
+</pre>
+
+<p>
+It is important to understand the shading model used in the graphics engine because it helps us understand the complexity underneath just one vertex lighting calculation. For just one vertex, we might have to calculate 3 to 4 face normals and a light normal. Every time a vector is normalized, a square root operation is used. Pure software square root operations cost more cycles at the hardware level than an operation such as addition or multiplication. Lets look at where the square root comes from during vector normalization. To normalize a 3D vector to 1, the components of the vector must be scaled by the magnitude (length) of the total vector.
+
+$$ \text{Magnitude (length) of 3D vector} = \sqrt{x^2 + y^2 + z^2}$$
+
+Now lets scale each component x, y & z :
+$$ \text{Normalized vector coordinates} = ({x \over \sqrt{x^2 + y^2 + z^2} }), ({y \over \sqrt{x^2 + y^2 + z^2} }), ({z \over \sqrt{x^2 + y^2 + z^2} })$$
+
+You can also re-write this to be:
+$$ \text{Normalized vector coordinates} = ({1 \over \sqrt{x^2 + y^2 + z^2}} *x), ({1 \over \sqrt{x^2 + y^2 + z^2} } * y), ({1 \over \sqrt{x^2 + y^2 + z^2} } * z)$$
+
+Now you can see that we have term that matches: 
+$${1 \over \sqrt{something}}$$
+
+This is  the inverse square root term that the developers of quake3 sought to optimize. Speeding up this operation would significantly improve performance in the graphics engine because of how often the square root gets used per vertex. Also consider how many vertex calculations are computed per frame -- probably thousands, if not hundreds of thousands or even millions.
+</p>
+
+<p>
+There is also one important fact that I rarely see discussed when covering this algorithm; the developers also took advantage of hardware optimized instructions for square roots when available. There already existed specific assembly instructions for fast square roots. Let's take a look at the code below:
+</p>
+
+<pre>
+<code>
+Source: https://github.com/id-Software/Quake-III-Arena/blob/master/code/renderer/tr_surface.c#L555
+
+static void VectorArrayNormalize(vec4_t *normals, unsigned int count)
+{
+//    assert(count);
+        
+#if idppc
+    {
+        register float half = 0.5;
+        register float one  = 1.0;
+        float *components = (float *)normals;
+        
+        // Vanilla PPC code, but since PPC has a reciprocal square root estimate instruction,
+        // runs *much* faster than calling sqrt().  We'll use a single Newton-Raphson
+        // refinement step to get a little more precision.  This seems to yeild results
+        // that are correct to 3 decimal places and usually correct to at least 4 (sometimes 5).
+        // (That is, for the given input range of about 0.6 to 2.0).
+        do {
+            float x, y, z;
+            float B, y0, y1;
+            
+            x = components[0];
+            y = components[1];
+            z = components[2];
+            components += 4;
+            B = x*x + y*y + z*z;
+
+#ifdef __GNUC__            
+            asm("frsqrte %0,%1" : "=f" (y0) : "f" (B));
+#else
+			y0 = __frsqrte(B);
+#endif
+            y1 = y0 + half*y0*(one - B*y0*y0);
+
+            x = x * y1;
+            y = y * y1;
+            components[-4] = x;
+            z = z * y1;
+            components[-3] = y;
+            components[-2] = z;
+        } while(count--);
+    }
+#else // No assembly version for this architecture, or C_ONLY defined
+	// given the input, it's safe to call VectorNormalizeFast
+    while (count--) {
+        VectorNormalizeFast(normals[0]);
+        normals++;
+    }
+#endif
+
+}
+</code>
+</pre>
+
+<p>
+PPC refers to "PowerPC" which is a RISC architecture developed together by Apple, IBM, and Motorola. It was first released in 1992 and the 2nd edition to the architecture was released in May of 1994. The architecture was used in Apple desktops and later on in gaming consoles in the early 2000's. The architecture has an instruction called "Floating Reciprocal Square Root Estimate" or frsqrte. The estimate has a relative error no greater than 1/32. While this is rather poor precision, it is much faster than traditional instructions used in a reciprocal square root calculation.
+</p>
+
+<figure> 
+<img src="images/frsqrte.png" style="max-width:50%; max-height:50%; display: block; margin: auto;"> 
+<figcaption style="max-width:50%; display: block; margin: auto; text-align: center;">
+Floating Reciprocal Square Root Estimate <a href="#references">[6]</a>
+</figcaption>
+</figure>
+
+<p>
+The frsqrte instruction is used in combination with one Newton-Raphson iteration to improve accuracy. As we will discuss later on, quake3's fast inverse square root also uses one Newton-Raphson iteration. I do not believe the practice of using Newton-Raphson iterations with reciprocal square roots originated with quake3, and it was possibly recommended from someone else. However, I am still researching when these two methods were first used together.
+
+In summary, the graphics engine will be compiled with hardware optimized frsqrte instructions when defined, otherwise, the software fast inverse square root will be used. Both methods will be finalized with a single Newton-Raphson to improve the accuracy of the estimate.
+</p>
 
 <H2>Key Concepts</H2>
   <ol>
@@ -297,4 +468,6 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
     <li>https://stackoverflow.com/questions/8909841/why-does-the-ieee-754-standard-use-a-127-bias</li>
     <li>https://stackoverflow.com/questions/19864749/why-do-we-bias-the-exponent-of-a-floating-point-number</li>
     <li>https://lomont.org/papers/2003/InvSqrt.pdf</li>
+    <li>https://image2.slideserve.com/4696621/gouraud-shading-2-n.jpg</li>
+    <li>https://bitsavers.trailing-edge.com/pdf/ibm/powerpc/SR28-5124-01_The_PowerPC_Architecture_May94.pdf</li>
   </ol>
