@@ -92,12 +92,15 @@ It is important to understand the shading model used in the graphics engine beca
 $$ \text{Magnitude (length) of 3D vector} = \sqrt{x^2 + y^2 + z^2}$$
 
 Now lets scale each component x, y & z :
+
 $$ \text{Normalized vector coordinates} = ({x \over \sqrt{x^2 + y^2 + z^2} }), ({y \over \sqrt{x^2 + y^2 + z^2} }), ({z \over \sqrt{x^2 + y^2 + z^2} })$$
 
 You can also re-write this to be:
+
 $$ \text{Normalized vector coordinates} = ({1 \over \sqrt{x^2 + y^2 + z^2}} *x), ({1 \over \sqrt{x^2 + y^2 + z^2} } * y), ({1 \over \sqrt{x^2 + y^2 + z^2} } * z)$$
 
-Now you can see that we have term that matches: 
+Now you can see that we have term that matches:
+
 $${1 \over \sqrt{something}}$$
 
 This is  the inverse square root term that the developers of quake3 sought to optimize. Speeding up this operation would significantly improve performance in the graphics engine because of how often the square root gets used per vertex. Also consider how many vertex calculations are computed per frame -- probably thousands, if not hundreds of thousands or even millions.
