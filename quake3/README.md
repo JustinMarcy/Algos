@@ -11,12 +11,14 @@ $$\\{x \in \mathbb{R} \mid x > 0\\}$$
 The Gouraud shading model uses the surface normals of each surronding polygon (face normals) to interpolate the surface normal at the vertex. Once the vertex normal is known, it is possible to compute the diffuse and specular light components of the Gouraud model.
 </p>
 
-<figure> 
-<img src="images/gouraud_shading.png" style="max-width:50%; max-height:50%; display: block; margin: auto;"> 
-<figcaption style="max-width:50%; display: block; margin: auto; text-align: center;">
-Gouraud Surface Normal Interpolation <a href="#references">[5]</a>
-</figcaption>
-</figure>
+<div align="center">
+  <img src="images/gouraud_shading.png">
+  <br>
+  <figcaption>
+    Gouraud Surface Normal Interpolation <a href="#references">[5]</a>
+  </figcaption>
+</div>
+<br>
 
 <p>
 For the specular light component, we need to first know the reflected light ray. The equation to calculate the reflected light ray is the following:
@@ -165,12 +167,14 @@ static void VectorArrayNormalize(vec4_t *normals, unsigned int count)
 PPC refers to "PowerPC" which is a RISC architecture developed together by Apple, IBM, and Motorola. It was first released in 1992 and the 2nd edition to the architecture was released in May of 1994. The architecture was used in Apple desktops and later on in gaming consoles in the early 2000's. The architecture has an instruction called "Floating Reciprocal Square Root Estimate" or frsqrte. The estimate has a relative error no greater than 1/32. While this is rather poor precision, it is much faster than traditional instructions used in a reciprocal square root calculation.
 </p>
 
-<figure> 
-<img src="images/frsqrte.png" style="max-width:50%; max-height:50%; display: block; margin: auto;"> 
-<figcaption style="max-width:50%; display: block; margin: auto; text-align: center;">
-Floating Reciprocal Square Root Estimate <a href="#references">[6]</a>
-</figcaption>
-</figure>
+<div align="center">
+  <img src="images/frsqrte.png">
+  <br>
+  <figcaption>
+    Floating Reciprocal Square Root Estimate <a href="#references">[6]</a>
+  </figcaption>
+</div>
+<br>
 
 <p>
 The frsqrte instruction is used in combination with one Newton-Raphson iteration to improve accuracy. As we will discuss later on, quake3's fast inverse square root also uses one Newton-Raphson iteration. I do not believe the practice of using Newton-Raphson iterations with reciprocal square roots originated with quake3, and it was possibly recommended from someone else. However, I am still researching when these two methods were first used together.
