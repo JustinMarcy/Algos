@@ -5,6 +5,14 @@
 $$f(x) = {1 \over \sqrt{x}}$$
 $$\\{x \in \mathbb{R} \mid x > 0\\}$$
 
+<H2>Key Concepts</H2>
+  <ol>
+    <li>Normalized numbers in IEEE 754.</li>
+    <li>Piecewise linear approximation.</li>
+    <li>Bit manipulation in the C-language.</li>
+    <li>Take advantage of constraints (input will always be positive and the result will always be between 0 and 1).</li>
+  </ol>
+
 <H2>Computer Graphics Background</H2>
 <p>The algorithm's primary purpose is to optimize vector normalization in a computer graphics and rendering context. Inverse square roots are used to normalize a vector, usually a surface normal of a polygon or light ray. These normals are then used (depending on the shading model) to calculate the reflection of a light source on an object. The common shading models that existed both during game development and still used today are flat shading, Gouraud shading and Phong shading. In Quake III Arena, the graphics engine primarily uses Gouraud shading. 
 
@@ -25,7 +33,7 @@ For the specular light component, we need to first know the reflected light ray.
 
 $$R = 2(\hat{N}\cdot\hat{L})\hat{N}-\hat{L} $$
 
-This calculation requires both the surface normal at the vertex and the normalized light vector. Now specular light still requires one more calculation after finding the reflected light, but I only want to highlight the normalised vectors here. These calculations are seen in the graphics engine code for calculating the specular light component in quake3:
+This calculation requires both the surface normal at the vertex and the normalized light vector. The specular light component still requires one more calculation after finding the reflected light. However, I only want to highlight the normalized vectors here. These calculations for specular light are seen in the quake3 graphics engine code:
 </p>
 
 <pre>
@@ -87,7 +95,7 @@ void RB_CalcSpecularAlpha( unsigned char *alphas ) {
 </pre>
 
 <p>
-It is important to understand the shading model used in the graphics engine because it helps us understand the complexity underneath just one vertex lighting calculation. For just one vertex, we might have to calculate 3 to 4 face normals and a light normal. Every time a vector is normalized, a square root operation is used. Pure software square root operations cost more cycles at the hardware level than an operation such as addition or multiplication. Lets look at where the square root comes from during vector normalization. To normalize a 3D vector to 1, the components of the vector must be scaled by the magnitude (length) of the total vector.
+It is important to understand the shading model used in the graphics engine because it helps us understand the complexity underneath just one vertex lighting calculation and why the developers sought to optimize it. For just one vertex, we might have to calculate 3 to 4 face normals and a light normal. Every time a vector is normalized, a square root operation is used. Pure software square root operations cost more cycles at the hardware level than an operation such as addition or multiplication. Lets look at where the square root comes from during vector normalization. To normalize a 3D vector to 1, the components of the vector must be scaled by the magnitude (length) of the total vector.
 
 $$ \text{Magnitude (length) of 3D vector} = \sqrt{x^2 + y^2 + z^2}$$
 
@@ -185,15 +193,7 @@ The frsqrte instruction is used in combination with one Newton-Raphson iteration
 In summary, the graphics engine will be compiled with hardware optimized frsqrte instructions when defined, otherwise, the software fast inverse square root will be used. Both methods will be finalized with a single Newton-Raphson to improve the accuracy of the estimate.
 </p>
 
-<H2>Key Concepts</H2>
-  <ol>
-    <li>Normalized numbers in IEEE 754.</li>
-    <li>Piecewise linear approximation.</li>
-    <li>Bit manipulation in the C-language.</li>
-    <li>Take advantage of constraints (input will always be positive and the result will always be between 0 and 1).</li>
-  </ol>
-
-<H3>IEEE-754</H3>
+<H2>IEEE-754</H2>
   <p>A single precision float in IEEE-754 (also called binary32) is defined in the table below:
   </p>
 <!-- <style>
@@ -351,7 +351,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
     </tr>
   </table>
 
-<H3>The Mathematical Approximation:</H3>
+<H2>The Mathematical Approximation</H2>
   <p>The most impressive part of this algorithm is the mathematical intuition behind it. There are two major intuitions. One is a piecewise linear approximation shown below.</p>
 
   $$ log_{2}(1 + x) \approx x $$
@@ -389,7 +389,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   $$ log_{2}(x) \approx {M\over 2^{23}} + E + \mu -127 $$
   $$ \boxed{log_{2}(x) \approx {1\over 2^{23}} (M + 2^{23}*E) + \mu -127} $$
 
-  <p>Now that the piecewise approximation is integrated into the IEEE-754 float formula, it is assumed the creators then substituted this into the inverse square root. Again, we take the log of both sides of our equation and the substitute the approximation. </p>
+  <p>Now that the piecewise approximation is integrated into the IEEE-754 float formula, it is assumed the creators then substituted this into the inverse square root. Again, we take the log of both sides of our equation and then substitute the approximation. </p>
 
   $$ y = {1 \over \sqrt{x}} $$
   $$ log_{2}(y) = log_{2}({1\over \sqrt{x}}) $$
@@ -410,7 +410,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   $$ \underbrace{i}_{output} = \underbrace{0x5f3759df}_{magic\space number} - \underbrace{(i >> 1)}_{halved\space input }; $$
 
 <H4 id="cfactor">Correction Factor & Magic Number:</H4>
-  <p>The creators knew that while the piecewise approximation wasn't the most accurate, it was fast because it did not involve any operations other than adding or multiplying some constants later on in the calculations. Looking at the vanilla approximation below, you can see the approximation is not great in between 0 and 1.
+  <p>The creators knew that while the piecewise approximation wasn't the most accurate, it was fast because it did not involve any operations other than adding or multiplying some constants later on in the calculations. Looking at the vanilla approximation below, you can see the approximation is perfect at the intercepts (0 and 1) but rather poor everywhere else.
   </p>
 
   <div align="center">
@@ -422,7 +422,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   </div>
   <br>
 
-  <p>To reduce the error across all values between 0 and 1, the creators added a correction factor &#956 to offset x. This reduces average error while keeping complexity low (addition/subtraction are fast operations).
+  <p>To reduce error across all values between 0 and 1, the creators added a correction factor &#956 to offset x. This reduces error while keeping complexity low. In fact, adding an offset does not change the complexity at all because it will just change the "magic number" constant that already exists. Unlike the offset, the same logic does not apply if we add another degree of freedom (a custom slope) to the linear approximation. The constraint here is that we must stay parallel to y=x and therefore the slope is fixed at 1. If we were to add a custom slope, we would not be able to separate it from the input x value easily without messing up this clean form of y = magic number - half of input. In other words, adding a custom slope would add at least one more multiply operation and potentially ruin the fast bit shift, depending on how you structure the equation. For this reason, a custom slope cannot be integrated into the magic number and only the offset can be adjusted.
   </p>
 
   <div align="center"> 
@@ -445,12 +445,10 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   $$ \mu = {188939\over4194304} $$
   $$ \boxed{\mu = 0.0450465679168701171875} $$
 
+  <p>It is still speculation as to whether this value for &#956 (0.045...) was derived from trial and error, incremental brute-force or calculated mathematically. By "incremental brute-force," this mean a lower resolution brute force that does not include all available float values between 0 and 1. As we will see in another section <a href="#best_constant">(Deriving the best constant)</a>, a paper published by Chris Lomont in 2003 computes this full brute-force value for all floats in this range and it is slightly different than the original. To my knowledge, no one has been able to show mathematically how the original correction value was derived. It is entirely possible a mathematical solution does not exist. When most people approach this mystery from a mathematical perpective, they minimize error for this linear approximation. Generally, we seek to minimize relative or absolute error, but there are also other "decision rules" such as minimax and Chebyshev that can be used for fitting the linear approximation.</p>
 
 
-  <p>It is still speculation as to whether this value for &#956 was decided from trial and error or calculated somehow. I would also like to point out that in Nemean's youtube video, he stated that the value was 0.043, which I suspect was just a calculation or rounding error. <a href="#references">[1]</a> Additionally, the &#956 value used in the algorithm is not the best if you are trying to minimize relative error. As we will see in another section <a href="#best_constant">(Deriving the best constant)</a>, a paper published by Chris Lomont in 2003 compares maximal relative error of the original magic number and a derived magic number that minimizes maximal relative error.</p>
-<H3>Bit Manipulation:</H3>
-
-<H2>Example</H2>
+<H2>Bit Manipulation:</H2>
 
 <H2>Results</H2>
 <H3>Percent Difference:</H3>
