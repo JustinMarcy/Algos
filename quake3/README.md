@@ -273,22 +273,49 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   $$float_{10}= (-1)^{Sign} * (1 + {Mantissa\over 2^{23} } ) * 2^{Exponent-Bias}$$
   </p>
 
+  <p>When a decimal number is converted to a IEEE-754 float, the value is first converted to binary and then normalized to a value between 1 and less than 2. It does this by bit-shifting the binary value until the MSSB (Most Significant Set Bit, aka the first '1') is to the left of the decimal place (e.g. 1.rest_of_data). The IEEE-754 standard normalizes numbers into this range and implies a leading bit of 1. This only applies for the "Normalized Numbers" part of the standard. This allows an extra bit to be saved for data by dropping the MSSB since it is guaranteed to always be 1.
+  </p>
+
+  </p>The bit-shift is recorded as the initial value for the exponent. Decimal values less than 1 are bit-shifted right, values greater than or equal to 2 are bit-shifted left, and values in-between are already normalized. Shifts to the left are recorded as positive exponents and shifts the right are recorded as negative exponents. No shift is recorded as 0. After dropping the implicit 1 in the number, the Mantissa is left with only the fractional part.</p>
+
 <H4>Offset Binary Notation in IEEE-754:</H4>
-  <p>In IEEE-754, the exponent is interpreted differently than it is stored. The standard uses a "bias" to interpret the stored exponent value. The bias essentially makes the value signed, splitting the range into negative and positive values. So for a 32-bit float, the 8-bit exponent has it's decimal range is shifted from (0 to 255) to (-126 to 127). This offset is also referred to as "excess-127". Just remember that the offset changes depending on the size of the float and therefore the number of bits available to the exponent. For example, a 64-bit float would use excess-1023. This is the equation to find the bias:
+  <p>As previously stated, the initial exponent value is determined from the MSSB bit-shift. However, the exponent is interpreted differently than it is stored. The standard uses a "bias" to interpret the stored exponent value. The bias essentially makes the value signed without using an additional sign-bit. This splits the range of possible values into negative and positive numbers because we need negative and positive exponents to represent out MSSB bit-shift. So for a 32-bit float, the 8-bit exponent has it's decimal range shifted from (0 to 255) to (-126 to 127). This offset is also referred to as "excess-127". Remember that the offset changes depending on the size of the float and therefore the number of bits available to the exponent. For example, a 64-bit float would use excess-1023. This is the equation to find the bias:
   </p>
 
   $$ bias = 2^{bits-1}-1$$
 
   <p style="text-align: center;">where <i>bits</i> is the available number of bits to the exponent</p>
 
-  <p>
-  Moreover, the standard reserves 0 and 255 for special cases (0, -inf, +inf, NaN). This affects the range of the possible unsigned integers to go from (0, 255) to (1, 254). We can represent the decimal range of possible integers as follows:
+  <p>Now let's take a look at the range of possible values for an exponent. We start with an unsigned range represented by:
+
+  $$ \\{0,\space 2^{bits}-1\\} $$
+
+  For an 8-bit exponent, this would mean 256 values (0, 255). </p>
+
+  <p>Moreover, the standard reserves the lowest and highest value for special cases (0, -inf, +inf, NaN). This affects the range of the possible unsigned integers to go from (0, 255) to (1, 254). We can represent the decimal range of possible integers as follows.
 
   $$ \\{1,\space 2^{bits}-2\\} $$
-  Then subtract the bias:
+  Next subtract the bias to the lower and upper bounds:
   $$ \\{1-bias,\space (2^{bits}-2) - bias\\} $$
-  which simplifies to:
-  $$ \\{1-bias,\space bias\\} $$
+  The upper bound can be simplified further:
+
+  $$
+  \begin{aligned}
+  (2^{bits}-2) - bias &= (2^{bits}-2) - (2^{bits-1}-1) \\
+  &= 2^{bits}-2 - 2^{bits-1}+1 \\
+  &= 2^{bits} - 2^{bits-1}-1 \\
+  \rightarrow& Apply\space exponent\space rule: x^{m+n}=x^{m}*x^{n} \\
+  &= 2^{1}*(2^{bits-1}) - 2^{bits-1} - 1 \space \\
+  &= (2-1)*2^{bits-1} - 1 \\
+  &= 2^{bits-1} - 1 \\
+  &= bias \\
+  \end{aligned}
+  $$
+
+  So the total range of an exponent in IEEE-754 can be expressed as:
+  $$ \boxed{ \\{1-bias,\space bias\\} }$$
+
+  For an 8-bit exponent, the usable range (excluding reserved values) would be (-126, 127). It is important to recall the value stored in the float is still unsigned (0,255), but the interpreted range allows for negative values.
 
   The standard was designed with this bias for a few reasons:
   </p>
@@ -299,7 +326,9 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
     <li> Why not add another sign bit that is separate like the mantissa? I believe this is because you would lose another bit of accuracy in the mantissa, which is prioritized over the exponent range.</li>
   </ol>
 
-  <p>While it is not necessary to understand the entire IEEE-754 standard for this algorithm, it is necessary to understand the bit representation to help us understand the mathematical approximations in the next section. Specifically, the bit representations of the mantissa and exponent. Next we will look at how we go from: </p>
+
+<H4>Why it matters?</H4>
+  <p>While it is not necessary to understand the entire IEEE-754 standard for this algorithm, it is necessary to understand the bit representation to help us understand the mathematical approximations in the <a href="#math_approx">next section</a>. Specifically, the bit representations of the mantissa and exponent. Next we will look at how we go from: </p>
 
   $$ bit \space representation_{10} = (1 + {Mantissa\over 2^{23} } ) * 2^{Exponent-Bias} $$
 
@@ -351,7 +380,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
     </tr>
   </table>
 
-<H2>The Mathematical Approximation</H2>
+<H2 id="math_approx">The Mathematical Approximation</H2>
   <p>The most impressive part of this algorithm is the mathematical intuition behind it. There are two major intuitions. One is a piecewise linear approximation shown below.</p>
 
   $$ log_{2}(1 + x) \approx x $$
