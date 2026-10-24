@@ -295,8 +295,11 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   <p>Moreover, the standard reserves the lowest and highest value for special cases (0, -inf, +inf, NaN). This affects the range of the possible unsigned integers to go from (0, 255) to (1, 254). We can represent the decimal range of possible integers as follows.
 
   $$ \\{1,\space 2^{bits}-2\\} $$
+
   Next subtract the bias to the lower and upper bounds:
+
   $$ \\{1-bias,\space (2^{bits}-2) - bias\\} $$
+
   The upper bound can be simplified further:
 
   $$
@@ -304,7 +307,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   (2^{bits}-2) - bias &= (2^{bits}-2) - (2^{bits-1}-1) \\
   &= 2^{bits}-2 - 2^{bits-1}+1 \\
   &= 2^{bits} - 2^{bits-1}-1 \\
-  \rightarrow& Apply\space exponent\space rule: x^{m+n}=x^{m}*x^{n} \\
+  &\rightarrow Apply\space exponent\space rule: x^{m+n} =x^{m} * x^{n} \\
   &= 2^{1}*(2^{bits-1}) - 2^{bits-1} - 1 \space \\
   &= (2-1)*2^{bits-1} - 1 \\
   &= 2^{bits-1} - 1 \\
@@ -313,6 +316,7 @@ In summary, the graphics engine will be compiled with hardware optimized frsqrte
   $$
 
   So the total range of an exponent in IEEE-754 can be expressed as:
+  
   $$ \boxed{ \\{1-bias,\space bias\\} }$$
 
   For an 8-bit exponent, the usable range (excluding reserved values) would be (-126, 127). It is important to recall the value stored in the float is still unsigned (0,255), but the interpreted range allows for negative values.
